@@ -5,11 +5,11 @@ Manipulação do ROS(Robotic Operation System) para a comunição e controle de 
 O primeiro passo para o desenvolvimento do projeto é a instalção do ROS e suas bibliotecas que estão disponíveis na sessão "installation/deb-packages" no site oficial(ROS 2 Documentation: Jazzy):
 https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html
 
-__TRASMISSION_NODE__
-# bluetooth classic(SPP/RFCOMM)
+# TRANSMISSION_NODE
+_bluetooth classic(SPP/RFCOMM)_
 
-__CONTROL_NODE__
+# CONTROL_NODE
 
-__TRACK_NODE__
+# TRACK_NODE
 
-__LOCALIZATION_NODE__
+# LOCALIZATION_NODE
