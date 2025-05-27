@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>interface_node</name>
+  <version>0.1.0</version>
+  <description>Nó de interface para ajuste de parâmetros de imagem</description>
+  
+  <maintainer email="voce@exemplo.com">Você</maintainer>
+  <license>Apache-2.0</license>
+
+  <!-- Dependências de compilação -->
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  
+  <!-- Dependências do pacote -->
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>cv_bridge</depend>
+  <depend>opencv</depend>  <!-- Padronizado para minúsculo -->
+  <depend>image_adjust_msgs</depend>
+
+  <!-- SEÇÃO OBRIGATÓRIA QUE ESTAVA FALTANDO -->
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
