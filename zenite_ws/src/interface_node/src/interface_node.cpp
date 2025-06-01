@@ -1,15 +1,17 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
-#include <cv_bridge/cv_bridge.hpp>  // Corrigido para .hpp
+#include <cv_bridge/cv_bridge.hpp> 
 #include <opencv2/opencv.hpp>
-#include "image_adjust_msgs/msg/image_params.hpp"  // Nome corrigido do pacote
+#include "image_adjust_msgs/msg/image_params.hpp"
 
 class InterfaceNode : public rclcpp::Node {
 public:
     InterfaceNode() : Node("interface_node") {
         // Publicador de parâmetros de ajuste
-        params_pub_ = this->create_publisher<image_adjust_msgs::msg::ImageParams>(
-            "image_params", 10);
+        //params_pub_ = this->create_publisher<image_adjust_msgs::msg::ImageParams>(
+            //"image_params", 10);
+            
+
             
         // Assinante da imagem processada
         image_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
