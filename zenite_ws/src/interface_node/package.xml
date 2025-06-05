@@ -14,10 +14,10 @@
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
   <depend>cv_bridge</depend>
-  <depend>opencv</depend>  <!-- Padronizado para minúsculo -->
+  <depend>opencv</depend>
   <depend>image_adjust_msgs</depend>
+  <depend>ioctl</depend>
 
-  <!-- SEÇÃO OBRIGATÓRIA QUE ESTAVA FALTANDO -->
   <export>
     <build_type>ament_cmake</build_type>
   </export>

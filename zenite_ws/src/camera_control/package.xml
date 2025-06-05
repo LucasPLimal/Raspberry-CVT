@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>camera_control</name>
+  <version>0.1.0</version>
+  <description>Pacote ROS 2 para controle de parâmetros da câmera via V4L2</description>
+
+  <maintainer email="seu@email.com">Seu Nome</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>opencv</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+
+  <exec_depend>libv4l-dev</exec_depend>
+
+</package>

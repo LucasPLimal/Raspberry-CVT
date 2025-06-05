@@ -1,0 +1,40 @@
+#include <rclcpp/rclcpp.hpp>
+#include <opencv2/opencv.hpp>
+#include "camera_control/camera_control.hpp"
+
+int main(int argc, char** argv) {
+    rclcpp::init(argc, argv);
+    auto node = std::make_shared<InterfaceNode>();
+
+    cv::namedWindow("Controles", cv::WINDOW_NORMAL);
+
+    cv::createTrackbar("Saturation", "Controles", nullptr, 100,
+        [](int val, void* ptr){
+            auto node = static_cast<InterfaceNode*>(ptr);
+            node->send_params(-1, val / 100.0f, -1);
+        }, node.get());
+
+    cv::createTrackbar("Brilho", "Controles", nullptr, 100,
+        [](int val, void* ptr){
+            auto node = static_cast<InterfaceNode*>(ptr);
+            node->send_params(val / 100.0f, -1, -1);
+        }, node.get());
+
+    cv::createTrackbar("Contraste", "Controles", nullptr, 100,
+        [](int val, void* ptr){
+            auto node = static_cast<InterfaceNode*>(ptr);
+            node->send_params(-1, -1, val / 100.0f);
+        }, node.get());
+
+    cv::VideoCapture cap(0);
+    while (rclcpp::ok()) {
+        cv::Mat frame;
+        cap >> frame;
+        if (frame.empty()) break;
+        cv::imshow("Camera", frame);
+        if (cv::waitKey(30) == 27) break;
+    }
+
+    rclcpp::shutdown();
+    return 0;
+}
