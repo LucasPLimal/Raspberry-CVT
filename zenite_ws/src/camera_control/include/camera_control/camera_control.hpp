@@ -7,9 +7,9 @@
 class InterfaceNode {
 public:
     InterfaceNode() {
-        fd_ = open("/dev/video0", O_RDWR);
+        fd_ = open("/dev/video2", O_RDWR);
         if (fd_ == -1) {
-            perror("Erro ao abrir /dev/video0");
+            perror("Erro ao abrir /dev/video2");
         }
     }
 
@@ -19,6 +19,7 @@ public:
         }
     }
 
+    
     /// Altera os parâmetros da câmera (use -1 para manter o valor atual)
     void send_params(float brilho, float saturacao, float contraste) {
         if (fd_ == -1) return;
@@ -39,7 +40,7 @@ public:
 
         struct v4l2_control control {};
         control.id = id;
-
+        
         if (ioctl(fd_, VIDIOC_G_CTRL, &control) == -1) {
             perror("Erro ao obter controle");
             return -1;

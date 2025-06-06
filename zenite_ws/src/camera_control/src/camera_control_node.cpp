@@ -8,25 +8,34 @@ int main(int argc, char** argv) {
 
     cv::namedWindow("Controles", cv::WINDOW_NORMAL);
 
-    cv::createTrackbar("Saturation", "Controles", nullptr, 100,
+    cv::createTrackbar("Saturation", "Controles", nullptr, 255,
         [](int val, void* ptr){
             auto node = static_cast<InterfaceNode*>(ptr);
-            node->send_params(-1, val / 100.0f, -1);
+            node->send_params(-1, val/255.0f, -1);
         }, node.get());
 
-    cv::createTrackbar("Brilho", "Controles", nullptr, 100,
+    int saturation = node->get_control(V4L2_CID_SATURATION);
+    cv::setTrackbarPos("Saturation", "Controles", saturation);
+
+    cv::createTrackbar("Brilho", "Controles", nullptr, 255,
         [](int val, void* ptr){
             auto node = static_cast<InterfaceNode*>(ptr);
-            node->send_params(val / 100.0f, -1, -1);
+            node->send_params(val / 255.0f, -1, -1);
         }, node.get());
 
-    cv::createTrackbar("Contraste", "Controles", nullptr, 100,
+    int brightness = node->get_control(V4L2_CID_BRIGHTNESS);
+    cv::setTrackbarPos("Brilho", "Controles", brightness);
+
+    cv::createTrackbar("Contraste", "Controles", nullptr, 255,
         [](int val, void* ptr){
             auto node = static_cast<InterfaceNode*>(ptr);
-            node->send_params(-1, -1, val / 100.0f);
+            node->send_params(-1, -1, val / 255.0f);
         }, node.get());
+    
+    int contrast = node->get_control(V4L2_CID_CONTRAST);
+    cv::setTrackbarPos("Contraste", "Controles", contrast);
 
-    cv::VideoCapture cap(0);
+    cv::VideoCapture cap(2);
     while (rclcpp::ok()) {
         cv::Mat frame;
         cap >> frame;
