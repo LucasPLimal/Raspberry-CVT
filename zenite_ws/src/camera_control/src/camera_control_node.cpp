@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
     int contrast = node->get_control(V4L2_CID_CONTRAST);
     cv::setTrackbarPos("Contraste", "Controles", contrast);
 
-    cv::VideoCapture cap(2);
+    cv::VideoCapture cap(0);
     while (rclcpp::ok()) {
         cv::Mat frame;
         cap >> frame;

@@ -7,9 +7,9 @@
 class InterfaceNode {
 public:
     InterfaceNode() {
-        fd_ = open("/dev/video2", O_RDWR);
+        fd_ = open("/dev/video0", O_RDWR);
         if (fd_ == -1) {
-            perror("Erro ao abrir /dev/video2");
+            perror("Erro ao abrir /dev/video0");
         }
     }
 
