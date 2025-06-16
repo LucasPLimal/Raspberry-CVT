@@ -6,20 +6,19 @@ find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
-find_package(image_transport REQUIRED)
 find_package(OpenCV REQUIRED)
-
-include_directories(include)
+find_package(image_adjust_msgs REQUIRED)
 
 add_executable(camera_control_node src/camera_control_node.cpp)
 
-ament_target_dependencies(camera_control_node
+ament_target_dependencies(
+  camera_control_node
   rclcpp
   sensor_msgs
   std_msgs
   cv_bridge
-  image_transport
   OpenCV
+  image_adjust_msgs
 )
 
 target_include_directories(camera_control_node PUBLIC
