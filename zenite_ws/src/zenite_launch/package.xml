@@ -14,7 +14,7 @@
 
   <exec_depend>acquisition_node</exec_depend>
   <exec_depend>interface_node</exec_depend>
-  <exec_depend>usb_cam_exec</exec_depend>
+  <exec_depend>camera_control</exec_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
