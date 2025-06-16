@@ -1,23 +1,36 @@
 from launch import LaunchDescription
+from launch.actions import RegisterEventHandler, EmitEvent
+from launch.event_handlers import OnProcessExit
+from launch.events import Shutdown
 from launch_ros.actions import Node
-import os
-from ament_index_python.packages import get_package_share_directory
+
 
 def generate_launch_description():
-    return LaunchDescription([
-        Node(
-            package='camera_control',
-            executable='camera_control_node',
-            name='camera_control',
-            output='screen',
-            prefix='xterm -e',
-        ),
+    interface_node = Node(
+        package='interface_node',
+        executable='interface_node',
+        name='interface_node',
+        output='screen',
+        prefix='xterm -e',
+    )
 
-        Node(
-            package='interface_node',
-            executable='interface_node',
-            name='interface_node',
-            output='screen',
-            prefix='xterm -e',  # Abre em terminal separado
-        ),
+    camera_control = Node(
+        package='camera_control',
+        executable='camera_control_node',
+        name='camera_node',
+        output='screen',
+        prefix='xterm -e',
+    )
+
+    return LaunchDescription([
+        interface_node,
+        camera_control,
+
+        # Se o interface_node morrer, encerra tudo
+        RegisterEventHandler(
+            OnProcessExit(
+                target_action=interface_node,
+                on_exit=[EmitEvent(event=Shutdown())]
+            )
+        )
     ])
