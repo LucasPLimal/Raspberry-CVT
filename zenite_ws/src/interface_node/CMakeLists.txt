@@ -19,7 +19,8 @@ target_include_directories(interface_node PRIVATE
 )
 
 # Linkagem de dependências
-ament_target_dependencies(interface_node
+ament_target_dependencies(
+  interface_node
   rclcpp
   sensor_msgs
   cv_bridge

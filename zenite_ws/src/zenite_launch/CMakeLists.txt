@@ -11,19 +11,9 @@ find_package(ament_cmake REQUIRED)
 install(
   DIRECTORY
     launch
-    config
   DESTINATION
     share/${PROJECT_NAME}/
 )
-
-# Instala outros recursos (se houver, como config/, scripts/, etc.)
-# install(
-#   DIRECTORY
-#     config
-#     scripts
-#   DESTINATION
-#     share/${PROJECT_NAME}/
-# )
 
 # Declara que este é um pacote ament_cmake
 ament_package()
