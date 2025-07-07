@@ -93,7 +93,7 @@ private:
     auto msg = geometry_msgs::msg::Vector3();
     msg.x = v_direito;
     msg.y = v_esquerdo;
-    msg.z = 0.0;  // sem uso, só pra completar a mensagem
+    //msg.z = 0.0;
     publisher_->publish(msg);
 
     i++;

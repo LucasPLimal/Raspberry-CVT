@@ -7,8 +7,7 @@
 
 using boost::asio::serial_port_base;
 
-class TransmissionNode : public rclcpp::Node
-{
+class TransmissionNode : public rclcpp::Node {
 public:
   TransmissionNode()
   : Node("transmission_node"),
@@ -18,7 +17,7 @@ public:
   {
     // Tente abrir a porta serial
     try {
-      serial_.open("/dev/rfcomm0");  // Altere para sua porta serial Bluetooth
+      serial_.open("/dev/rfcomm0");  // Código para associar mac a porta rfcomm: sudo rfcomm bind /dev/rfcomm0 00:23:09:01:36:17 (Parnadilo)
       serial_.set_option(serial_port_base::baud_rate(9600));
       serial_.set_option(serial_port_base::character_size(8));
       serial_.set_option(serial_port_base::parity(serial_port_base::parity::none));
