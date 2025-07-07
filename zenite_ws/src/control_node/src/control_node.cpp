@@ -3,8 +3,9 @@
 #include <memory>
 #include <iostream>
 #include <vector>
-#include <fstream>  // para salvar arquivo
+#include <fstream>
 #include <rclcpp/rclcpp.hpp>
+#include <geometry_msgs/msg/vector3.hpp>  // Mensagem para publicar velocidades
 
 using namespace std::chrono_literals;
 
@@ -25,6 +26,8 @@ public:
     kc_linear(1.0f), Ti_linear(10000.0f),
     integral_limit_linear(5.0f), integral_limit_angular(5.0f)
   {
+    publisher_ = this->create_publisher<geometry_msgs::msg::Vector3>("wheel_velocities", 10);
+
     timer = this->create_wall_timer(std::chrono::duration<float>(dt), std::bind(&ControlNode::timer_callback, this));
   }
 
@@ -81,8 +84,17 @@ private:
     // Guarda dados pra salvar depois
     trajetoria_x.push_back(x);
     trajetoria_y.push_back(y);
-    trajetoria_theta.push_back(theta * 180.0f / M_PI);  // graus
+    trajetoria_theta.push_back(theta * 180.0f / M_PI);
     tempo.push_back(i * dt);
+    vel_dir.push_back(v_direito);
+    vel_esq.push_back(v_esquerdo);
+
+    // Publica velocidades
+    auto msg = geometry_msgs::msg::Vector3();
+    msg.x = v_direito;
+    msg.y = v_esquerdo;
+    msg.z = 0.0;  // sem uso, só pra completar a mensagem
+    publisher_->publish(msg);
 
     i++;
   }
@@ -90,9 +102,9 @@ private:
   void save_to_csv()
   {
     std::ofstream file("trajetoria.csv");
-    file << "tempo,x,y,theta\n";
+    file << "tempo,x,y,theta,vel_dir,vel_esq\n";
     for (size_t j = 0; j < trajetoria_x.size(); j++) {
-      file << tempo[j] << "," << trajetoria_x[j] << "," << trajetoria_y[j] << "," << trajetoria_theta[j] << "\n";
+      file << tempo[j] << "," << trajetoria_x[j] << "," << trajetoria_y[j] << "," << trajetoria_theta[j] << "," << vel_dir[j] << "," << vel_esq[j] << "\n";
     }
     file.close();
     std::cout << "Dados salvos em trajetoria.csv\n";
@@ -131,8 +143,11 @@ private:
   std::vector<float> trajetoria_y;
   std::vector<float> trajetoria_theta;
   std::vector<float> tempo;
+  std::vector<float> vel_dir;
+  std::vector<float> vel_esq;
 
   rclcpp::TimerBase::SharedPtr timer;
+  rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr publisher_;
 };
 
 int main(int argc, char * argv[])
