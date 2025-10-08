@@ -1,0 +1,5 @@
+float32 x_pixel
+float32 y_pixel
+---
+float32 x_m
+float32 y_m

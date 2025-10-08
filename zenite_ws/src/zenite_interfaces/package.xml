@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>zenite_interfaces</name>
+  <version>0.1.0</version>
+  <description>Pacote de interfaces do Zenite</description>
+  <maintainer email="ryan@example.com">Ryan</maintainer>
+  <license>Apache-2.0</license>
+
+  <!-- Indica que é um pacote de interface -->
+  <member_of_group>rosidl_interface_packages</member_of_group>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <build_depend>rosidl_default_generators</build_depend>
+  <exec_depend>rosidl_default_runtime</exec_depend>
+</package>
