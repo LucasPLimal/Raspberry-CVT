@@ -8,6 +8,8 @@ find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(image_adjust_msgs REQUIRED)
+find_package(zenite_utils REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 # Configura o executável
 add_executable(interface_node src/interface_node.cpp)
@@ -26,6 +28,8 @@ ament_target_dependencies(
   cv_bridge
   OpenCV
   image_adjust_msgs
+  zenite_utils
+  yaml-cpp
 )
 
 # Instalação

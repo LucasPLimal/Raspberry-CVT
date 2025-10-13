@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>zenite_utils</name>
+  <version>0.1.0</version>
+  <description>Utilitários comuns do projeto Zenite, incluindo funções de conversão e leitura de escala.</description>
+
+  <maintainer email="ryan@zenite.com">Ryan</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- Dependências necessárias -->
+  <depend>rclcpp</depend>
+  <depend>yaml-cpp</depend>
+  <depend>OpenCV</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

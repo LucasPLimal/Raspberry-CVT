@@ -2,133 +2,115 @@
 #include <sensor_msgs/msg/image.hpp>
 #include <cv_bridge/cv_bridge.hpp>
 #include <opencv2/opencv.hpp>
-#include <zenite_interfaces/srv/pixel_to_meter.hpp>
-#include <vector>
-#include <iostream>
+#include "zenite_utils/pixel_converter.hpp"
 
-using namespace cv;
-using namespace std;
+using std::placeholders::_1;
 
-class LocalizationNode : public rclcpp::Node {
+class LocalizationNode : public rclcpp::Node
+{
 public:
-    LocalizationNode() : Node("localization_node") {
-        RCLCPP_INFO(this->get_logger(), "Localization Node iniciado.");
-
-        // Subscriber da imagem do acquisition_node
+    LocalizationNode()
+    : Node("localization_node")
+    {
+        // Subscrição da câmera
         image_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-            "camera_frame", 10,
-            std::bind(&LocalizationNode::image_callback, this, std::placeholders::_1));
+            "camera_frame", 10, std::bind(&LocalizationNode::imageCallback, this, _1));
 
-        // Criação do serviço
-        service_ = this->create_service<zenite_interfaces::srv::PixelToMeter>(
-            "convert_pixel_to_meter",
-            std::bind(&LocalizationNode::convert_callback, this,
-                      std::placeholders::_1, std::placeholders::_2));
+        // Parâmetro para caminho do YAML
+        scale_yaml_path_ = this->declare_parameter<std::string>("scale_yaml_path", "/tmp/scale.yaml");
 
-        // Janela para selecionar os pontos
-        namedWindow("Selecao");
-        setMouseCallback("Selecao", cliqueMouse, this);
+        // Cria janela e seta callback do mouse
+        cv::namedWindow("Localization - Defina os Pontos");
+        cv::setMouseCallback("Localization - Defina os Pontos", onMouse, this);
+
+        RCLCPP_INFO(this->get_logger(), "LocalizationNode iniciado!");
     }
 
 private:
-    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
-    rclcpp::Service<zenite_interfaces::srv::PixelToMeter>::SharedPtr service_;
-    cv::Mat latest_image_;
-    vector<Point2f> pontosImagem_;
-    Mat H_;
+    void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
+    {
+        try
+        {
+            cv::Mat frame = cv_bridge::toCvCopy(msg, "bgr8")->image;
 
-    // -------------------- Subscriber da imagem --------------------
-    void image_callback(const sensor_msgs::msg::Image::SharedPtr msg) {
-        try {
-            cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, "bgr8");
-            if (cv_ptr->image.empty()) {
-                RCLCPP_WARN(this->get_logger(), "Imagem recebida está vazia!");
-                return;
-            }
-            latest_image_ = cv_ptr->image;
-            processar_imagem();
+            // Desenha pontos clicados
+            for (const auto& p : image_points_)
+                cv::circle(frame, p, 5, cv::Scalar(0, 0, 255), -1);
 
-            // Exemplo fixo de pixel a converter
-            if (!H_.empty()) {
-                Point2f exemplo_pixel(317, 213);
-                vector<Point2f> entrada = {exemplo_pixel}, saida;
-                perspectiveTransform(entrada, saida, H_);
-                cout << "[Exemplo] Ponto na imagem: " << exemplo_pixel 
-                     << " -> Ponto no chão (m): " << saida[0] << endl;
+            // Desenha linhas conectando os pontos
+            if (image_points_.size() > 1)
+            {
+                for (size_t i = 0; i < image_points_.size(); ++i)
+                    cv::line(frame, image_points_[i], image_points_[(i+1) % image_points_.size()], cv::Scalar(255, 0, 0), 2);
             }
 
-        } catch (const cv_bridge::Exception& e) {
+            cv::imshow("Localization - Defina os Pontos", frame);
+            cv::waitKey(1);
+
+            // Quando os 4 pontos estão definidos e ainda não salvamos
+            if (image_points_.size() == 4 && world_points_.size() == 4 && !saved_)
+            {
+                RCLCPP_INFO(this->get_logger(), "Calculando transformação e salvando escala...");
+
+                converter_.setReferencePoints(image_points_, world_points_);
+                converter_.saveToYaml(scale_yaml_path_);
+
+                saved_ = true;
+                RCLCPP_INFO(this->get_logger(), "Transformação salva em %s", scale_yaml_path_.c_str());
+            }
+
+            // Exemplo: converter um ponto usando PixelConverter
+            if (saved_)
+            {
+                cv::Point2f pontoImagem(317, 217);  // pixel a ser convertido
+                cv::Point2f pontoMundo = converter_.pixelToMeter(pontoImagem);
+
+                RCLCPP_INFO(this->get_logger(), "Ponto na imagem: (%.1f, %.1f)", pontoImagem.x, pontoImagem.y);
+                RCLCPP_INFO(this->get_logger(), "Ponto no chão (m): (%.2f, %.2f)", pontoMundo.x, pontoMundo.y);
+            }
+        }
+        catch (const cv_bridge::Exception &e)
+        {
             RCLCPP_ERROR(this->get_logger(), "Erro no cv_bridge: %s", e.what());
         }
     }
 
-    // -------------------- Processa a imagem e desenha pontos --------------------
-    void processar_imagem() {
-        if (latest_image_.empty()) return;
-
-        Mat temp;
-        latest_image_.copyTo(temp);
-
-        for (const auto &p : pontosImagem_)
-            circle(temp, p, 5, Scalar(0, 0, 255), -1);
-
-        imshow("Selecao", temp);
-        waitKey(30);
-
-        // Se já temos 4 pontos e H ainda não foi calculada
-        if (pontosImagem_.size() == 4 && H_.empty()) {
-            calcularHomografia();
-        }
-    }
-
-    // -------------------- Callback do mouse --------------------
-    static void cliqueMouse(int evento, int x, int y, int, void* userdata) {
-        auto *self = reinterpret_cast<LocalizationNode*>(userdata);
-        if (evento == EVENT_LBUTTONDOWN && self->pontosImagem_.size() < 4) {
-            self->pontosImagem_.push_back(Point2f((float)x, (float)y));
-            cout << "Ponto " << self->pontosImagem_.size() << ": (" << x << ", " << y << ")" << endl;
-        }
-    }
-
-    // -------------------- Calcula a homografia --------------------
-    void calcularHomografia() {
-        vector<Point2f> pontosChao = {
-            Point2f(0.0f, 0.0f),
-            Point2f(2.75f, 0.0f),
-            Point2f(2.75f, 2.25f),
-            Point2f(0.0f, 2.25f)
-        };
-
-        H_ = findHomography(pontosImagem_, pontosChao);
-        cout << "\nMatriz de Homografia calculada:\n" << H_ << endl;
-    }
-
-    // -------------------- Serviço de conversão pixel -> metro --------------------
-    void convert_callback(
-        const shared_ptr<zenite_interfaces::srv::PixelToMeter::Request> request,
-        shared_ptr<zenite_interfaces::srv::PixelToMeter::Response> response)
+    // Callback do mouse
+    static void onMouse(int event, int x, int y, int, void* userdata)
     {
-        if (H_.empty()) {
-            RCLCPP_WARN(this->get_logger(), "Homografia ainda não calculada!");
-            response->x_m = 0.0f;
-            response->y_m = 0.0f;
-            return;
+        auto* self = static_cast<LocalizationNode*>(userdata);
+
+        if (event == cv::EVENT_LBUTTONDOWN && self->image_points_.size() < 4)
+        {
+            self->image_points_.push_back(cv::Point2f(x, y));
+            RCLCPP_INFO(self->get_logger(), "Ponto de imagem (%d, %d) registrado", x, y);
         }
 
-        Point2f pontoImagem(request->x_pixel, request->y_pixel);
-        vector<Point2f> entrada = {pontoImagem}, saida;
-        perspectiveTransform(entrada, saida, H_);
-
-        response->x_m = saida[0].x;
-        response->y_m = saida[0].y;
+        // Quando 4 pontos clicados, define pontos do mundo automaticamente
+        if (self->image_points_.size() == 4 && self->world_points_.empty())
+        {
+            self->world_points_ = {
+                cv::Point2f(0.0f, 0.0f),
+                cv::Point2f(2.75f, 0.0f),
+                cv::Point2f(2.75f, 2.25f),
+                cv::Point2f(0.0f, 2.25f)
+            };
+            RCLCPP_INFO(self->get_logger(), "Pontos do mundo definidos automaticamente (2.75 x 2.25 m).");
+        }
     }
+
+    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
+    std::string scale_yaml_path_;
+    std::vector<cv::Point2f> image_points_;
+    std::vector<cv::Point2f> world_points_;
+    zenite_utils::PixelConverter converter_;
+    bool saved_ = false;
 };
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv)
+{
     rclcpp::init(argc, argv);
-    auto node = make_shared<LocalizationNode>();
-    rclcpp::spin(node);
-    cv::destroyAllWindows();
+    rclcpp::spin(std::make_shared<LocalizationNode>());
     rclcpp::shutdown();
     return 0;
 }

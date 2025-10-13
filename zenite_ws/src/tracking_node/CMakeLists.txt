@@ -13,16 +13,18 @@ find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(zenite_utils REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
-add_executable(tracking src/tracking.cpp)
-ament_target_dependencies(tracking rclcpp std_msgs sensor_msgs cv_bridge OpenCV)
-target_link_libraries(tracking ${OpenCV_LIBS})
-target_include_directories(tracking PUBLIC
+add_executable(tracking_node src/tracking_node.cpp)
+ament_target_dependencies(tracking_node rclcpp std_msgs sensor_msgs cv_bridge OpenCV zenite_utils yaml-cpp)
+target_link_libraries(tracking_node ${OpenCV_LIBS})
+target_include_directories(tracking_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
 
-install(TARGETS tracking
+install(TARGETS tracking_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

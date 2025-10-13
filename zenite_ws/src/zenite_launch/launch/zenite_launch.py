@@ -26,8 +26,7 @@ def generate_launch_description():
             executable='control_node',
             name='control_node',
             output='screen',
-            prefix='xterm -hold -e',
-            arguments=['5.0', '5.0'],  # se quiser mudar o destino
+            prefix='xterm -e',,  # se quiser mudar o destino
         ),
 
         Node(
@@ -38,4 +37,19 @@ def generate_launch_description():
             prefix='xterm -e',
         ),
 
+        Node(
+            package='tracking_node',
+            executable='tracking_node',
+            name='tracking_node',
+            output='screen',
+            prefix='xterm -e',
+        ),
+
+        Node(
+            package='tracking_node',
+            executable='tracking_node',
+            name='tracking_node',
+            output='screen',
+            prefix='xterm -e',
+        ),
     ])

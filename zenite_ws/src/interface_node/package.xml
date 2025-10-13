@@ -17,6 +17,8 @@
   <depend>opencv</depend>
   <depend>image_adjust_msgs</depend>
   <depend>ioctl</depend>
+  <depend>yaml-cpp</depend>
+  <depend>zenite_utils</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

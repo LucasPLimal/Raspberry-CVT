@@ -1,39 +1,47 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.22)
 project(localization_node)
 
-# Busca por pacotes necessários
+# ROS 2
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(OpenCV REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
-find_package(std_msgs REQUIRED)
-find_package(zenite_interfaces REQUIRED)  # nosso pacote de srv
+find_package(OpenCV REQUIRED)
+find_package(yaml-cpp REQUIRED)
+find_package(zenite_utils REQUIRED)
 
-
-# Configura o executável
-add_executable(localization_node src/localization_node.cpp)
-
-# Inclui diretórios necessários
-target_include_directories(localization_node PRIVATE
-  ${OpenCV_INCLUDE_DIRS}
+# Inclui diretórios
+include_directories(
   ${cv_bridge_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
+  ${zenite_utils_INCLUDE_DIRS}  # pega include da biblioteca
 )
 
-# Linkagem de dependências
-ament_target_dependencies(
-  localization_node
+# Executável
+add_executable(localization_node src/localization_node.cpp)
+
+# Link das bibliotecas
+ament_target_dependencies(localization_node
   rclcpp
-  OpenCV
-  std_msgs
   sensor_msgs
   cv_bridge
-  zenite_interfaces
+  yaml-cpp
+  zenite_utils  # Linka a biblioteca utilitária
+  )
+
+target_link_libraries(localization_node
+  ${OpenCV_LIBS}      # OpenCV
 )
 
 # Instalação
 install(TARGETS localization_node
   DESTINATION lib/${PROJECT_NAME}
 )
+
+# Testes (opcional)
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
+endif()
 
 ament_package()
