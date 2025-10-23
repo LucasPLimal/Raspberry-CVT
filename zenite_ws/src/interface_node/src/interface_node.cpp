@@ -85,8 +85,8 @@ private:
         self->desired_pos_pub_->publish(pt_msg);
 
         //RCLCPP_INFO(self->get_logger(), 
-        //            "Clique na imagem: (%.1f, %.1f) -> Mundo: (%.2f, %.2f)",
-        //            pixel_point.x, pixel_point.y, world_point.x, world_point.y);
+                    //"Clique na imagem: (%.1f, %.1f) -> Mundo: (%.2f, %.2f)",
+                    //pixel_point.x, pixel_point.y, world_point.x, world_point.y);
     }
 
     cv::Mat latest_image_;

@@ -48,7 +48,7 @@ public:
         initial_pos_pub_->publish(msg);
 
         //RCLCPP_INFO(this->get_logger(),
-        //            "📡 Posição publicada: (%.3f, %.3f) m", world_point.x, world_point.y);
+                    //"📡 Posição publicada: (%.3f, %.3f) m", world_point.x, world_point.y);
     }
 
     bool hasImage() const { return !latest_image_.empty(); }
