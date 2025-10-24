@@ -26,7 +26,7 @@ public:
     kc_angular(5.0f), Ti_angular(1000.0f),
     kc_linear(1.0f), Ti_linear(10000.0f),
     integral_limit_linear(5.0f), integral_limit_angular(5.0f),
-    x(0.0f), y(0.0f), theta(315.0f * M_PI / 180.0f), // theta inicial fixo
+    x(0.0f), y(0.0f), theta(0.0f), // theta inicial fixo
     x_ref(0.0f), y_ref(0.0f),
     has_current_pos(false), has_desired_pos(false)
   {
@@ -44,7 +44,7 @@ public:
       std::chrono::duration<float>(dt),
       std::bind(&ControlNode::timer_callback, this));
 
-    RCLCPP_INFO(this->get_logger(), "✅ ControlNode iniciado com theta = 315° e aguardando posições...");
+    RCLCPP_INFO(this->get_logger(), "✅ ControlNode iniciado e aguardando posições...");
   }
 
 private:
