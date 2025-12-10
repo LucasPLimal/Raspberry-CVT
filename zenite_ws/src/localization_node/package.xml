@@ -16,7 +16,9 @@
   <exec_depend>rclcpp</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>cv_bridge</exec_depend>
+  <exec_depend>yaml-cpp</exec_depend>
   <exec_depend>zenite_utils</exec_depend>
+  
 
   <export>
     <build_type>ament_cmake</build_type>

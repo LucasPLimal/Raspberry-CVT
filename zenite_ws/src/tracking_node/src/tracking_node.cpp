@@ -5,11 +5,13 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/tracking.hpp>
 #include "zenite_utils/pixel_converter.hpp"
+using namespace std::chrono_literals;
 
 class TrackingNode : public rclcpp::Node {
 public:
-    TrackingNode()
-        : Node("tracking_node")
+    TrackingNode() : Node("tracking_node"), 
+                     last_publish_time_(this->now()),
+                     cooldown_duration_(500ms) // Cooldown definido
     {
         image_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
             "camera_frame", 10,
@@ -18,12 +20,10 @@ public:
         initial_pos_pub_ = this->create_publisher<std_msgs::msg::Float64MultiArray>(
             "/position", 10);
 
-        // 🔹 Carrega homografia/escala do YAML
         std::string yaml_path = this->declare_parameter<std::string>(
             "scale_yaml_path", "/tmp/scale.yaml");
 
         converter_.loadFromYaml(yaml_path);
-        RCLCPP_INFO(this->get_logger(), "✅ Escala carregada de: %s", yaml_path.c_str());
 
         RCLCPP_INFO(this->get_logger(), "TrackingNode iniciado!");
     }
@@ -40,18 +40,27 @@ public:
     }
 
     cv::Mat getLatestImage() const { return latest_image_; }
+    bool hasImage() const { return !latest_image_.empty(); }
 
     void publishPosition(const cv::Point2f& world_point)
     {
+        auto now = this->now();
+
+        // Só publica se passou do cooldown
+        if (now - last_publish_time_ < cooldown_duration_) {
+            return;
+        }
+
+        last_publish_time_ = now;
+
         std_msgs::msg::Float64MultiArray msg;
-        msg.data = {world_point.x, world_point.y};
+        msg.data = { world_point.x, world_point.y };
         initial_pos_pub_->publish(msg);
 
-        //RCLCPP_INFO(this->get_logger(),
-                    //"📡 Posição publicada: (%.3f, %.3f) m", world_point.x, world_point.y);
+        RCLCPP_INFO(this->get_logger(),
+            "Posicao enviada: (%.3f, %.3f) m",
+            world_point.x, world_point.y);
     }
-
-    bool hasImage() const { return !latest_image_.empty(); }
 
     zenite_utils::PixelConverter converter_;
 
@@ -60,7 +69,12 @@ private:
     rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr initial_pos_pub_;
 
     cv::Mat latest_image_;
+
+    // ⏳ Controle de cooldown
+    rclcpp::Time last_publish_time_;
+    rclcpp::Duration cooldown_duration_;
 };
+
 
 int main(int argc, char** argv)
 {
@@ -71,6 +85,7 @@ int main(int argc, char** argv)
     cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create();
     cv::Rect2d roi;
     bool inicializado = false;
+
     std::vector<cv::Point> trajetoria;
 
     while (rclcpp::ok()) {
@@ -82,9 +97,7 @@ int main(int argc, char** argv)
         }
 
         cv::Mat frame = node->getLatestImage();
-        if (frame.empty()) {
-            continue;
-        }
+        if (frame.empty()) continue;
 
         if (!inicializado) {
             roi = cv::selectROI("Selecione o carrinho", frame);
@@ -95,11 +108,12 @@ int main(int argc, char** argv)
                 RCLCPP_INFO(node->get_logger(), "🎯 Rastreamento inicializado.");
             }
         } else {
-            cv::Rect roi_atual;  // 🔹 usa cv::Rect (não Rect2d)
+            cv::Rect roi_atual;
             bool sucesso = tracker->update(frame, roi_atual);
 
             if (sucesso) {
                 roi = roi_atual;
+
                 cv::rectangle(frame, roi, cv::Scalar(0, 255, 0), 2);
 
                 cv::Point2f centro(
@@ -110,9 +124,11 @@ int main(int argc, char** argv)
                 for (size_t i = 1; i < trajetoria.size(); ++i)
                     cv::line(frame, trajetoria[i - 1], trajetoria[i], cv::Scalar(255, 0, 0), 2);
 
-                // 🔹 Conversão pixel → metros
                 cv::Point2f world_point = node->converter_.pixelToMeter(centro);
+
+                // Publicação com cooldown funcionando
                 node->publishPosition(world_point);
+
             } else {
                 cv::putText(frame, "Falha no rastreamento", cv::Point(50, 50),
                             cv::FONT_HERSHEY_SIMPLEX, 0.75, cv::Scalar(0, 0, 255), 2);
@@ -120,8 +136,7 @@ int main(int argc, char** argv)
         }
 
         cv::imshow("Rastreamento do Carrinho", frame);
-        if (cv::waitKey(30) == 27)
-            break; // ESC para sair
+        if (cv::waitKey(30) == 27) break;
 
         rate.sleep();
     }
@@ -130,3 +145,5 @@ int main(int argc, char** argv)
     cv::destroyAllWindows();
     return 0;
 }
+
+

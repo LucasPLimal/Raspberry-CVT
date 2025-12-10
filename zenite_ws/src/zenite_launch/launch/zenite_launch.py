@@ -1,7 +1,5 @@
 from launch import LaunchDescription
 from launch_ros.actions import Node
-import os
-from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
     return LaunchDescription([
@@ -10,7 +8,7 @@ def generate_launch_description():
             executable='acquisition_node',
             name='acquisition_node',
             output='screen',
-            prefix='xterm -e',
+            prefix='xterm -hold -e'
         ),
 
         Node(
@@ -18,7 +16,7 @@ def generate_launch_description():
             executable='interface_node',
             name='interface_node',
             output='screen',
-            prefix='xterm -e',  # Abre em terminal separado
+            prefix='xterm -hold -e'
         ),
 
         Node(
@@ -26,7 +24,7 @@ def generate_launch_description():
             executable='control_node',
             name='control_node',
             output='screen',
-            prefix='xterm -e',,  # se quiser mudar o destino
+            prefix='xterm -hold -e'
         ),
 
         Node(
@@ -34,7 +32,7 @@ def generate_launch_description():
             executable='transmission_node',
             name='transmission_node',
             output='screen',
-            prefix='xterm -e',
+            prefix='xterm -hold -e'
         ),
 
         Node(
@@ -42,14 +40,6 @@ def generate_launch_description():
             executable='tracking_node',
             name='tracking_node',
             output='screen',
-            prefix='xterm -e',
-        ),
-
-        Node(
-            package='tracking_node',
-            executable='tracking_node',
-            name='tracking_node',
-            output='screen',
-            prefix='xterm -e',
+            prefix='xterm -hold -e'
         ),
     ])

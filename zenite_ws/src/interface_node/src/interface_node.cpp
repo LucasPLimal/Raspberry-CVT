@@ -84,9 +84,9 @@ private:
         pt_msg.z = 0.0;
         self->desired_pos_pub_->publish(pt_msg);
 
-        //RCLCPP_INFO(self->get_logger(), 
-                    //"Clique na imagem: (%.1f, %.1f) -> Mundo: (%.2f, %.2f)",
-                    //pixel_point.x, pixel_point.y, world_point.x, world_point.y);
+        RCLCPP_INFO(self->get_logger(), 
+                    "Clique na imagem: (%.1f, %.1f) -> Mundo: (%.2f, %.2f)",
+                    pixel_point.x, pixel_point.y, world_point.x, world_point.y);
     }
 
     cv::Mat latest_image_;
@@ -96,9 +96,9 @@ private:
     rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr desired_pos_pub_;
     rclcpp::Publisher<image_adjust_msgs::msg::ImageParams>::SharedPtr params_pub_;
 
-    int hue_ = 32;
-    int saturation_ = 32;
-    int brightness_ = 128;
+    int hue_ = 0;
+    int saturation_ = 184;
+    int brightness_ = 255;
 };
 
 int main(int argc, char** argv)
