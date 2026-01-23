@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>localization_node</name>
+  <name>calibration_node</name>
   <version>0.1.0</version>
-  <description>Localization node for Zenite project using camera and PixelConverter</description>
+  <description>Calibration node for Zenite project using camera and PixelConverter</description>
   <maintainer email="ryan@example.com">Ryan</maintainer>
   <license>Apache-2.0</license>
 
