@@ -24,12 +24,12 @@ public:
         );
 
 
-        cap_.open(2);
+        cap_.open(0);
         if (!cap_.isOpened()) {
             RCLCPP_ERROR(this->get_logger(), "Não foi possível abrir a câmera!");
         }
 
-        fd_ = open("/dev/video2", O_RDWR);
+        fd_ = open("/dev/video0", O_RDWR);
         if (fd_ == -1) {
             RCLCPP_ERROR(this->get_logger(), "Erro ao acessar /dev/video0");
         }

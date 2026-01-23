@@ -78,7 +78,7 @@ private:
     // Callback do mouse
     static void onMouse(int event, int x, int y, int, void* userdata)
     {
-        auto* self = static_cast<LocalizationNode*>(userdata);
+        auto* self = static_cast<CalibrationNode*>(userdata);
 
         if (event == cv::EVENT_LBUTTONDOWN && self->image_points_.size() < 4)
         {
@@ -110,7 +110,7 @@ private:
 int main(int argc, char** argv)
 {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<LocalizationNode>());
+    rclcpp::spin(std::make_shared<CalibrationNode>());
     rclcpp::shutdown();
     return 0;
 }

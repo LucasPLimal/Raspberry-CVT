@@ -79,7 +79,7 @@ private:
 int main(int argc, char** argv)
 {
     rclcpp::init(argc, argv);
-    auto node = std::make_shared<TrackingNode>();
+    auto node = std::make_shared<LocalizationNode>();
     rclcpp::Rate rate(30);
 
     cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create();
