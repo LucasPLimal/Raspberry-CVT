@@ -17,172 +17,221 @@ class ControlNode : public rclcpp::Node
 public:
   ControlNode()
   : Node("control_node"),
-                      //last_publish_time_(this->now()),
-                      //cooldown_duration_(500ms),
-    L(0.016f), R(0.03f),
-    dt(0.1f),
+    L(0.075f),           // Distância entre rodas (ajustar conforme robô real)
+    R(0.02f),            // Raio da roda (ajustar conforme robô real)
+    dt(0.01f),           // Período de controle (10ms)
+    kc_angular(5.0f),    // Ganho proporcional angular
+    Ti_angular(1000.0f), // Tempo integral angular
+    kc_linear(1.0f),     // Ganho proporcional linear
+    Ti_linear(10000.0f), // Tempo integral linear
+    integral_limit_linear(5.0f),
+    integral_limit_angular(5.0f),
+    x(0.0f), y(0.0f), theta(0.0f),
+    x_ref(0.0f), y_ref(0.0f),
     e_linear_ant(0.0f), e_angular_ant(0.0f),
     i_linear(0.0f), i_angular(0.0f),
-    i(0),
-    kc_angular(200000.0f), Ti_angular(9000000000.0f),
-    kc_linear(5.0f), Ti_linear(10000.0f),
-    integral_limit_linear(5.0f), integral_limit_angular(5.0f),
-    x(0.0f), y(0.0f), theta(0.0f), // theta inicial fixo
-    x_ref(0.0f), y_ref(0.0f),
     has_current_pos(false), has_desired_pos(false),
-    att_dx(0.0f), att_dy(0.0f)
+    is_moving(false)
   {
+    // Publicador para velocidades das rodas
     publisher_ = this->create_publisher<geometry_msgs::msg::Vector3>("wheel_velocities", 10);
 
+    // Subscritor para posição atual (do sistema de visão/sensores)
     current_pos_sub_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
       "/position", 10,
       std::bind(&ControlNode::currentPosCallback, this, std::placeholders::_1));
 
+    // Subscritor para posição desejada
     desired_pos_sub_ = this->create_subscription<geometry_msgs::msg::Point>(
       "/desired_position", 10,
       std::bind(&ControlNode::desiredPosCallback, this, std::placeholders::_1));
 
-    timer = this->create_wall_timer(
+    // Timer para loop de controle
+    timer_ = this->create_wall_timer(
       std::chrono::duration<float>(dt),
-      std::bind(&ControlNode::timer_callback, this));
+      std::bind(&ControlNode::controlLoop, this));
 
-    RCLCPP_INFO(this->get_logger(), "ControlNode iniciado e aguardando posições...");
+    RCLCPP_INFO(this->get_logger(), "ControlNode iniciado");
+    RCLCPP_INFO(this->get_logger(), "Aguardando posição atual e posição desejada...");
   }
 
 private:
-  // Posição atual
+  // Callback para posição atual (de sensores externos)
   void currentPosCallback(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
   {
-    if (msg->data.size() >= 2) {
+    if (msg->data.size() >= 3) {
+      // Espera-se: [x, y, theta] ou [x, y]
       float new_x = static_cast<float>(msg->data[0]);
       float new_y = static_cast<float>(msg->data[1]);
+      float new_theta = theta; // mantém atual se não houver
 
-      // Se tivermos uma posição anterior válida, estimamos o theta a partir
-      // do deslocamento medido — isso corrige deriva e erros do modelo.
-      if (has_prev_pos_) {
-        float dx = new_x - prev_x_;
-        float dy = new_y - prev_y_;
+      if (msg->data.size() >= 3) {
+        // Se fornecerem theta diretamente
+        new_theta = static_cast<float>(msg->data[2]);
+      } else if (has_current_pos) {
+        // Estima theta a partir do deslocamento
+        float dx = new_x - x;
+        float dy = new_y - y;
         float dist = std::hypot(dx, dy);
-
-        att_dx = dx;
-        att_dy = dy;
-      
-        // atualiza theta apenas se houve deslocamento significativo
-        if (dist > 1e-4f) {
-          theta = std::atan2(dy, dx);
+        
+        if (dist > 0.001f) { // Movimento significativo
+          new_theta = std::atan2(dy, dx);
         }
       }
 
-      prev_x_ = new_x;
-      prev_y_ = new_y;
-      has_prev_pos_ = true;
-
       x = new_x;
       y = new_y;
+      theta = new_theta;
       has_current_pos = true;
-      RCLCPP_INFO(this->get_logger(), "Pos atual: (%.2f, %.2f), theta=%.1f°", x, y, theta * 180.0f / M_PI);
+
+      RCLCPP_DEBUG(this->get_logger(), "Pos atual: (%.3f, %.3f), θ=%.2f°", 
+                   x, y, theta * 180.0f / M_PI);
     }
   }
 
-  // Posição desejada
+  // Callback para posição desejada
   void desiredPosCallback(const geometry_msgs::msg::Point::SharedPtr msg)
   {
     x_ref = msg->x;
     y_ref = msg->y;
     has_desired_pos = true;
-    RCLCPP_INFO(this->get_logger(), "Nova pos desejada: (%.2f, %.2f)", x_ref, y_ref);
+    
+    // Reseta integradores quando muda referência
+    i_linear = 0.0f;
+    i_angular = 0.0f;
+    is_moving = true;
+    
+    RCLCPP_INFO(this->get_logger(), "Nova referência: (%.3f, %.3f)", x_ref, y_ref);
   }
 
-  void timer_callback()
+  // Loop principal de controle
+  void controlLoop()
   {
-    if (!has_current_pos || !has_desired_pos)
+    if (!has_current_pos || !has_desired_pos || !is_moving) {
       return;
+    }
 
-    float delta_d = std::hypot(x_ref - x, y_ref - y);
-    if (delta_d <= 0.001f)
+    // Calcula distância até o alvo
+    float delta_x = x_ref - x;
+    float delta_y = y_ref - y;
+    float distance = std::hypot(delta_x, delta_y);
+
+    // Critério de parada
+    if (distance < 0.01f) { // 1 cm de tolerância
+      stopRobot();
+      RCLCPP_INFO(this->get_logger(), "Alvo alcançado!");
+      is_moving = false;
       return;
+    }
 
-    float theta_ref = std::atan2(y_ref - y, x_ref - x);
-    float error_angular = theta_ref - theta;
-
-    // Normaliza o erro angular para [-pi, pi]
-    while (error_angular > M_PI) error_angular -= 2 * M_PI;
-    while (error_angular < -M_PI) error_angular += 2 * M_PI;
+    // Ângulo desejado (em direção ao alvo)
+    float theta_ref = std::atan2(delta_y, delta_x);
     
-    float error_linear = delta_d * std::cos(error_angular);
-  // PID linear (usar erro atual no integral e relação Ki = Kc / Ti)
-  float p_linear = kc_linear * error_linear;
-  float Ki_linear = (Ti_linear > 0.0f) ? (kc_linear / Ti_linear) : 0.0f;
-  i_linear += Ki_linear * error_linear * dt;
-  i_linear = std::clamp(i_linear, -integral_limit_linear, integral_limit_linear);
-  float u_linear = p_linear + i_linear;
-  e_linear_ant = error_linear;
+    // Erro angular (normalizado entre -π e π)
+    float error_angular = theta_ref - theta;
+    while (error_angular > M_PI) error_angular -= 2.0f * M_PI;
+    while (error_angular < -M_PI) error_angular += 2.0f * M_PI;
 
-  // PID angular
-  float p_angular = kc_angular * error_angular;
-  float Ki_angular = (Ti_angular > 0.0f) ? (kc_angular / Ti_angular) : 0.0f;
-  i_angular += Ki_angular * error_angular * dt;
-  i_angular = std::clamp(i_angular, -integral_limit_angular, integral_limit_angular);
-  float u_angular = p_angular + i_angular;
-  e_angular_ant = error_angular;
+    // Limita erro angular para ±90° (evita manobras bruscas)
+    const float MAX_ANGULAR_ERROR = M_PI_2;
+    error_angular = std::clamp(error_angular, -MAX_ANGULAR_ERROR, MAX_ANGULAR_ERROR);
 
-    // Calcula velocidades das rodas
-    float v_direito = (2.0f * u_linear + u_angular * L) / (2.0f * R);
-    float v_esquerdo = (2.0f * u_linear - u_angular * L) / (2.0f * R);
+    // Erro linear (projeção da distância na direção atual)
+    float error_linear = distance * std::cos(error_angular);
+    
+    // **CONTROLE PID - Linear**
+    float p_linear = kc_linear * error_linear;
+    
+    // Termo integral (Ki = Kc/Ti)
+    float Ki_linear = (Ti_linear > 0.0f) ? (kc_linear / Ti_linear) : 0.0f;
+    i_linear += Ki_linear * error_linear * dt;
+    i_linear = std::clamp(i_linear, -integral_limit_linear, integral_limit_linear);
+    
+    // Sinal de controle linear
+    float u_linear = p_linear + i_linear;
+    e_linear_ant = error_linear;
 
-    // Atualiza orientação (theta) pelo modelo diferencial
-    float v = (v_direito + v_esquerdo) * R / 2.0f;
-    float omega = (v_direito - v_esquerdo) * R / L;
-  theta += omega * dt;
+    // **CONTROLE PID - Angular**
+    float p_angular = kc_angular * error_angular;
+    
+    // Termo integral
+    float Ki_angular = (Ti_angular > 0.0f) ? (kc_angular / Ti_angular) : 0.0f;
+    i_angular += Ki_angular * error_angular * dt;
+    i_angular = std::clamp(i_angular, -integral_limit_angular, integral_limit_angular);
+    
+    // Sinal de controle angular
+    float u_angular = p_angular + i_angular;
+    e_angular_ant = error_angular;
 
-  // Normaliza theta para [-pi, pi]
-  while (theta > M_PI) theta -= 2.0f * M_PI;
-  while (theta < -M_PI) theta += 2.0f * M_PI;
+    // **CINEMÁTICA DIFERENCIAL**
+    // v = velocidade linear, ω = velocidade angular
+    float v = u_linear;
+    float omega = u_angular;
+
+    // Conversão para velocidades das rodas
+    float v_direito = (2.0f * v + omega * L) / (2.0f * R);
+    float v_esquerdo = (2.0f * v - omega * L) / (2.0f * R);
+
+    // Limita velocidades (ajuste conforme motor)
+    const float MAX_WHEEL_VEL = 10.0f; // rad/s
+    v_direito = std::clamp(v_direito, -MAX_WHEEL_VEL, MAX_WHEEL_VEL);
+    v_esquerdo = std::clamp(v_esquerdo, -MAX_WHEEL_VEL, MAX_WHEEL_VEL);
 
     // Publica velocidades
-    //auto now = this->now();
+    publishWheelVelocities(v_direito, v_esquerdo);
 
-        // Só publica se passou do cooldown
-        //if (now - last_publish_time_ < cooldown_duration_) {
-            //return;
-        //}
-    
-    auto msg = geometry_msgs::msg::Vector3();
-    msg.x = v_direito;
-    msg.y = v_esquerdo;
-    publisher_->publish(msg);
-
-    RCLCPP_INFO(this->get_logger(),
-      "x=%.2f y=%.2f | Dest=(%.2f,%.2f) | Vd=%.2f Ve=%.2f | θ=%.1f° | θ_ref=%.1f° | dx=%.2f | dy=%.2f",
-      x, y, x_ref, y_ref, v_direito, v_esquerdo, theta * 180 / M_PI, theta_ref * 180 / M_PI, att_dx, att_dy);
+    // Log
+    RCLCPP_INFO(this->get_logger(), 
+      "Pos: (%.3f, %.3f) | Ref: (%.3f, %.3f) | Dist: %.3f | "
+      "θ: %.1f° | θ_ref: %.1f° | Vd: %.2f | Ve: %.2f",
+      x, y, x_ref, y_ref, distance,
+      theta * 180.0f / M_PI, theta_ref * 180.0f / M_PI,
+      v_direito, v_esquerdo);
   }
-// 342.0, 284.0
-  // Variáveis principais
-  float L, R, dt;
-  float kc_angular, Ti_angular;
-  float kc_linear, Ti_linear;
-  float integral_limit_linear, integral_limit_angular;
-  float x, y, theta;
-  float x_ref, y_ref;
+
+  void publishWheelVelocities(float v_right, float v_left)
+  {
+    auto msg = geometry_msgs::msg::Vector3();
+    msg.x = v_right;
+    msg.y = v_left;
+    msg.z = 0.0; // pode ser usado para flags se necessário
+    publisher_->publish(msg);
+  }
+
+  void stopRobot()
+  {
+    publishWheelVelocities(0.0f, 0.0f);
+    RCLCPP_INFO(this->get_logger(), "Robô parado");
+  }
+
+  // Parâmetros do robô
+  const float L;      // Distância entre rodas (m)
+  const float R;      // Raio da roda (m)
+  const float dt;     // Período de controle (s)
+
+  // Ganhos PID
+  const float kc_angular, Ti_angular;
+  const float kc_linear, Ti_linear;
+  const float integral_limit_linear, integral_limit_angular;
+
+  // Estado atual
+  float x, y, theta;          // Posição e orientação atuais
+  float x_ref, y_ref;         // Posição desejada
+
+  // Estados do PID
   float e_linear_ant, e_angular_ant;
   float i_linear, i_angular;
-  int i;
-  bool has_current_pos, has_desired_pos;
-  float att_dx, att_dy;
 
-  // Histórico de posição para estimar theta a partir das medições
-  float prev_x_ = 0.0f;
-  float prev_y_ = 0.0f;
-  bool has_prev_pos_ = false;
+  // Flags
+  bool has_current_pos;
+  bool has_desired_pos;
+  bool is_moving;
 
-  rclcpp::TimerBase::SharedPtr timer;
+  // ROS2
+  rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr publisher_;
   rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr current_pos_sub_;
   rclcpp::Subscription<geometry_msgs::msg::Point>::SharedPtr desired_pos_sub_;
-
-  //rclcpp::Time last_publish_time_;
-  //rclcpp::Duration cooldown_duration_;
-
 };
 
 int main(int argc, char * argv[])
@@ -192,3 +241,4 @@ int main(int argc, char * argv[])
   rclcpp::shutdown();
   return 0;
 }
+

@@ -58,16 +58,6 @@ private:
                 saved_ = true;
                 RCLCPP_INFO(this->get_logger(), "Transformação salva em %s", scale_yaml_path_.c_str());
             }
-
-            // Exemplo: converter um ponto usando PixelConverter
-            if (saved_)
-            {
-                cv::Point2f pontoImagem(317, 217);  // pixel a ser convertido
-                cv::Point2f pontoMundo = converter_.pixelToMeter(pontoImagem);
-
-                RCLCPP_INFO(this->get_logger(), "Ponto na imagem: (%.1f, %.1f)", pontoImagem.x, pontoImagem.y);
-                RCLCPP_INFO(this->get_logger(), "Ponto no chão (m): (%.2f, %.2f)", pontoMundo.x, pontoMundo.y);
-            }
         }
         catch (const cv_bridge::Exception &e)
         {
