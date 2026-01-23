@@ -6,24 +6,24 @@
 
 using std::placeholders::_1;
 
-class LocalizationNode : public rclcpp::Node
+class CalibrationNode : public rclcpp::Node
 {
 public:
-    LocalizationNode()
+    CalibrationNode()
     : Node("localization_node")
     {
         // Subscrição da câmera
         image_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-            "camera_frame", 10, std::bind(&LocalizationNode::imageCallback, this, _1));
+            "camera_frame", 10, std::bind(&CalibrationNode::imageCallback, this, _1));
 
         // Parâmetro para caminho do YAML
         scale_yaml_path_ = this->declare_parameter<std::string>("scale_yaml_path", "/tmp/scale.yaml");
 
         // Cria janela e seta callback do mouse
-        cv::namedWindow("Localization - Defina os Pontos");
-        cv::setMouseCallback("Localization - Defina os Pontos", onMouse, this);
+        cv::namedWindow("Calibration - Defina os Pontos");
+        cv::setMouseCallback("Calibration - Defina os Pontos", onMouse, this);
 
-        RCLCPP_INFO(this->get_logger(), "LocalizationNode iniciado!");
+        RCLCPP_INFO(this->get_logger(), "CalibrationNode iniciado!");
     }
 
 private:
@@ -44,7 +44,7 @@ private:
                     cv::line(frame, image_points_[i], image_points_[(i+1) % image_points_.size()], cv::Scalar(255, 0, 0), 2);
             }
 
-            cv::imshow("Localization - Defina os Pontos", frame);
+            cv::imshow("Calibration - Defina os Pontos", frame);
             cv::waitKey(1);
 
             // Quando os 4 pontos estão definidos e ainda não salvamos
