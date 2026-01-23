@@ -13,6 +13,7 @@ public:
   : Node("transmission_node"),
     io_(),
     serial_(io_),
+    vmax_(1.0f)  //
   {
     try {
       
@@ -58,13 +59,16 @@ private:
     if (v_dir >= 0) direcao |= 0b00000001;
     if (v_esq >= 0) direcao |= 0b00000010;
 
+    v_esq = std::clamp(v_esq, -vmax_, vmax_);
+    v_dir = std::clamp(v_dir, -vmax_, vmax_);
+
     uint8_t pwm_esq = static_cast<uint8_t>(
-       std::abs(v_esq) * 255.0f 
+       std::abs(v_esq) / vmax_ * 255.0f 
 
       );
 
     uint8_t pwm_dir = static_cast<uint8_t>( 
-      std::abs(v_dir) * 255.0f 
+      std::abs(v_dir) / vmax_ * 255.0f 
     );
 
     uint8_t pacote[3] = {direcao, pwm_esq, pwm_dir};

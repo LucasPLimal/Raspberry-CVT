@@ -11,7 +11,7 @@ class LocalizationNode : public rclcpp::Node {
 public:
     LocalizationNode() : Node("tracking_node"), 
                      last_publish_time_(this->now()),
-                     cooldown_duration_(500ms) // Cooldown definido
+                     cooldown_duration_(50ms) // Cooldown definido
     {
         image_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
             "camera_frame", 10,
