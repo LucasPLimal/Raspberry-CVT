@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(tracking_node)
+project(localization_node)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -16,15 +16,15 @@ find_package(OpenCV REQUIRED)
 find_package(zenite_utils REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
-add_executable(tracking_node src/tracking_node.cpp)
-ament_target_dependencies(tracking_node rclcpp std_msgs sensor_msgs cv_bridge OpenCV zenite_utils yaml-cpp)
-target_link_libraries(tracking_node ${OpenCV_LIBS})
-target_include_directories(tracking_node PUBLIC
+add_executable(localization_node src/localization_node.cpp)
+ament_target_dependencies(localization_node rclcpp std_msgs sensor_msgs cv_bridge OpenCV zenite_utils yaml-cpp)
+target_link_libraries(localization_node ${OpenCV_LIBS})
+target_include_directories(localization_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
 
-install(TARGETS tracking_node
+install(TARGETS localization_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
