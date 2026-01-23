@@ -7,15 +7,15 @@
 #include "zenite_utils/pixel_converter.hpp"
 using namespace std::chrono_literals;
 
-class TrackingNode : public rclcpp::Node {
+class LocalizationNode : public rclcpp::Node {
 public:
-    TrackingNode() : Node("tracking_node"), 
+    LocalizationNode() : Node("tracking_node"), 
                      last_publish_time_(this->now()),
                      cooldown_duration_(500ms) // Cooldown definido
     {
         image_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
             "camera_frame", 10,
-            std::bind(&TrackingNode::imageCallback, this, std::placeholders::_1));
+            std::bind(&LocalizationNode::imageCallback, this, std::placeholders::_1));
 
         initial_pos_pub_ = this->create_publisher<std_msgs::msg::Float64MultiArray>(
             "/position", 10);
@@ -25,7 +25,7 @@ public:
 
         converter_.loadFromYaml(yaml_path);
 
-        RCLCPP_INFO(this->get_logger(), "TrackingNode iniciado!");
+        RCLCPP_INFO(this->get_logger(), "LocalizationNode iniciado!");
     }
 
     void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
@@ -105,7 +105,7 @@ int main(int argc, char** argv)
                 tracker->init(frame, roi);
                 inicializado = true;
                 cv::destroyWindow("Selecione o carrinho");
-                RCLCPP_INFO(node->get_logger(), "🎯 Rastreamento inicializado.");
+                RCLCPP_INFO(node->get_logger(), "Rastreamento inicializado.");
             }
         } else {
             cv::Rect roi_atual;
