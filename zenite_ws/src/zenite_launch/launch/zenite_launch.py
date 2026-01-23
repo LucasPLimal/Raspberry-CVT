@@ -36,9 +36,9 @@ def generate_launch_description():
         ),
 
         Node(
-            package='tracking_node',
-            executable='tracking_node',
-            name='tracking_node',
+            package='localization_node',
+            executable='localization_node',
+            name='localization_node',
             output='screen',
             prefix='xterm -hold -e'
         ),
