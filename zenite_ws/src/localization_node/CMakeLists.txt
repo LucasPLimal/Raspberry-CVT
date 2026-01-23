@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(localization_node)
+project(calibration_node)
 
 # ROS 2
 find_package(ament_cmake REQUIRED)
@@ -18,10 +18,10 @@ include_directories(
 )
 
 # Executável
-add_executable(localization_node src/localization_node.cpp)
+add_executable(calibration_node src/calibration_node.cpp)
 
 # Link das bibliotecas
-ament_target_dependencies(localization_node
+ament_target_dependencies(calibration_node
   rclcpp
   sensor_msgs
   cv_bridge
@@ -29,12 +29,12 @@ ament_target_dependencies(localization_node
   zenite_utils  # Linka a biblioteca utilitária
   )
 
-target_link_libraries(localization_node
+target_link_libraries(calibration_node
   ${OpenCV_LIBS}      # OpenCV
 )
 
 # Instalação
-install(TARGETS localization_node
+install(TARGETS calibration_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
