@@ -18,7 +18,7 @@ public:
             std::bind(&LocalizationNode::imageCallback, this, std::placeholders::_1));
 
         initial_pos_pub_ = this->create_publisher<std_msgs::msg::Float64MultiArray>(
-            "/position", 10);
+            "/current_position", 10);
 
         std::string yaml_path = this->declare_parameter<std::string>(
             "scale_yaml_path", "/tmp/scale.yaml");

@@ -13,7 +13,7 @@ public:
   : Node("transmission_node"),
     io_(),
     serial_(io_),
-    vmax_(1.0f)  //
+    vmax_(40.0f)  //
   {
     try {
       

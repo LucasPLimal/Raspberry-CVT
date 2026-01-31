@@ -17,8 +17,8 @@ class ControlNode : public rclcpp::Node
 public:
   ControlNode()
   : Node("control_node"),
-    L(0.075f),           // Distância entre rodas (ajustar conforme robô real)
-    R(0.02f),            // Raio da roda (ajustar conforme robô real)
+    L(0.16f),           // Distância entre rodas (ajustar conforme robô real)
+    R(0.03f),            // Raio da roda (ajustar conforme robô real)
     dt(0.01f),           // Período de controle (10ms)
     kc_angular(5.0f),    // Ganho proporcional angular
     Ti_angular(1000.0f), // Tempo integral angular
@@ -38,7 +38,7 @@ public:
 
     // Subscritor para posição atual (do sistema de visão/sensores)
     current_pos_sub_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
-      "/position", 10,
+      "/current_position", 10,
       std::bind(&ControlNode::currentPosCallback, this, std::placeholders::_1));
 
     // Subscritor para posição desejada
@@ -59,7 +59,7 @@ private:
   // Callback para posição atual (de sensores externos)
   void currentPosCallback(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
   {
-    if (msg->data.size() >= 3) {
+    if (msg->data.size() >= 2) {
       // Espera-se: [x, y, theta] ou [x, y]
       float new_x = static_cast<float>(msg->data[0]);
       float new_y = static_cast<float>(msg->data[1]);
@@ -171,11 +171,6 @@ private:
     // Conversão para velocidades das rodas
     float v_direito = (2.0f * v + omega * L) / (2.0f * R);
     float v_esquerdo = (2.0f * v - omega * L) / (2.0f * R);
-
-    // Limita velocidades (ajuste conforme motor)
-    const float MAX_WHEEL_VEL = 10.0f; // rad/s
-    v_direito = std::clamp(v_direito, -MAX_WHEEL_VEL, MAX_WHEEL_VEL);
-    v_esquerdo = std::clamp(v_esquerdo, -MAX_WHEEL_VEL, MAX_WHEEL_VEL);
 
     // Publica velocidades
     publishWheelVelocities(v_direito, v_esquerdo);
