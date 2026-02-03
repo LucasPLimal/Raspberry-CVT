@@ -117,7 +117,7 @@ private:
     float distance = std::hypot(delta_x, delta_y);
 
     // Critério de parada
-    if (distance < 0.01f) { // 1 cm de tolerância
+    if (distance < 0.10f) { // 1 cm de tolerância
       stopRobot();
       RCLCPP_INFO(this->get_logger(), "Alvo alcançado!");
       is_moving = false;

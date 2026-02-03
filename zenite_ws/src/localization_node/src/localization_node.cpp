@@ -25,7 +25,7 @@ public:
 
         converter_.loadFromYaml(yaml_path);
 
-        RCLCPP_INFO(this->get_logger(), "LocalizationNode iniciado!");
+        RCLCPP_INFO(this->get_logger(), "Localization_Node iniciado!");
     }
 
     void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
