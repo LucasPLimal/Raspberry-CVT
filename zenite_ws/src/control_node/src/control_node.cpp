@@ -27,9 +27,6 @@ public:
     integral_limit_linear(5.0f),
     integral_limit_angular(5.0f),
     x(0.0f), y(0.0f), theta(0.0f),
-    x_ref(0.0f), y_ref(0.0f),
-    e_linear_ant(0.0f), e_angular_ant(0.0f),
-    i_linear(0.0f), i_angular(0.0f),
     has_current_pos(false), has_desired_pos(false),
     is_moving(false)
   {
@@ -95,7 +92,7 @@ private:
     x_ref = msg->x;
     y_ref = msg->y;
     has_desired_pos = true;
-    
+  
     // Reseta integradores quando muda referência
     i_linear = 0.0f;
     i_angular = 0.0f;
@@ -117,7 +114,7 @@ private:
     float distance = std::hypot(delta_x, delta_y);
 
     // Critério de parada
-    if (distance < 0.10f) { // 1 cm de tolerância
+    if (distance < 0.05f) { // 5 cm de tolerância
       stopRobot();
       RCLCPP_INFO(this->get_logger(), "Alvo alcançado!");
       is_moving = false;

@@ -10,7 +10,7 @@ class CalibrationNode : public rclcpp::Node
 {
 public:
     CalibrationNode()
-    : Node("localization_node")
+    : Node("calibration_node")
     {
         // Subscrição da câmera
         image_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
