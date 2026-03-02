@@ -96,9 +96,9 @@ private:
     rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr desired_pos_pub_;
     rclcpp::Publisher<image_adjust_msgs::msg::ImageParams>::SharedPtr params_pub_;
 
-    int hue_ = 0;
-    int saturation_ = 184;
-    int brightness_ = 255;
+    int hue_ = 255;
+    int saturation_ = 172;
+    int brightness_ = 150;
 };
 
 int main(int argc, char** argv)

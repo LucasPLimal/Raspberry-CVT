@@ -82,7 +82,7 @@ int main(int argc, char** argv)
     auto node = std::make_shared<LocalizationNode>();
     rclcpp::Rate rate(30);
 
-    cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create();
+    cv::Ptr<cv::Tracker> tracker = cv::TrackerCSRT::create();
     cv::Rect2d roi;
     bool inicializado = false;
 
