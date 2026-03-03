@@ -33,31 +33,68 @@ O Zênite é simultaneamente uma plataforma funcional e uma ferramenta didática
 O Zênite utiliza uma arquitetura modular baseada em ROS 2, composta pelos seguintes nós:
 
 ### 🔹 acquisition_node
-Responsável pela captura das imagens da câmera zenital e aplicação de ajustes (brilho, saturação e matiz).
+O acquisition_node é o responsável por fazer a comunicação direta com a câmera do projeto. Ele abre o dispositivo de vídeo, captura as imagens continuamente e envia esses frames para o ROS 2, permitindo que outros nós usem a imagem em tempo real. Além disso, ele recebe ajustes como brilho, saturação e hue vindos do interface_node onde aplica essas configurações diretamente na câmera, garantindo que a imagem exibida esteja sempre de acordo com o que o usuário escolheu. Para isso, ele desativa o modo automático de exposição e passa a controlar tudo manualmente. O nó funciona em um ritmo de aproximadamente 30 quadros por segundo, convertendo cada captura para o formato de mensagem do ROS e publicando no tópico correspondente. Assim, ele serve como a ponte entre a câmera física e o restante do sistema robótico, fornecendo imagens atualizadas e configuráveis.
 
 ### 🔹 calibration_node
-Realiza a calibração do ambiente por meio de homografia, convertendo pixels em coordenadas reais (metros).
+O calibration_node é o responsável por fazer a calibração da área de atuação do robô, permitindo que a câmera saiba converter pontos da imagem para coordenadas reais no chão, através do cálculo de homografia. Ele recebe continuamente os frames da câmera e exibe essas imagens em uma janela, permitindo que o operador selecione quatro pontos da cena, normalmente os cantos da área de operação do robô, como ilustrado na fig. X. A partir dessas coordenadas,  o nó registra as posições na imagem e as utiliza para realizar cálculos matriciais que permitem associar esses pontos a medidas reais do ambiente, formando um retângulo de dimensões conhecidas. Com esses pares de pontos, o nó calcula a transformação necessária para converter pixels em metros e salva essa configuração em um arquivo .yaml para ser usada pelos outros nós. Assim, o calibration_node estabelece a base para que o robô entenda onde está e possa navegar de maneira precisa.
 
 ### 🔹 localization_node
-Executa o rastreamento do robô utilizando o algoritmo CSRT do OpenCV e converte a posição para coordenadas reais.
+O localization_node recebe continuamente as imagens da câmera e rastreia a posição do robô em tempo real, a partir de um algoritmo feito em C++, utilizando o método de rastreamento CSRT\cite{CSRT} do OpenCV. No início, o usuário seleciona o carrinho na tela por meio de uma seleção baseada em pixels, permitindo que a função de monitoramento acompanhe automaticamente o robô nos frames seguintes. O nó então desenha um retângulo ao redor do carrinho, registra sua trajetória e calcula o centro dessa região, como mostra a fig X. Esse ponto é convertido de pixels para metros utilizando a transformação (homografia) obtida pelo calibration_node, gerando a posição real do robô no ambiente, a qual é enviada ao control_node. Assim, o localization_node combina rastreamento visual com conversão de coordenadas físicas, permitindo acompanhar o movimento do robô de forma simples e contínua.
 
 ### 🔹 interface_node
-Permite ao usuário:
-- Visualizar a câmera em tempo real  
-- Selecionar o destino do robô com cliques  
-- Ajustar parâmetros da imagem  
+O interface_node funciona como a parte visual e interativa do sistema, ilustrado na fig X. Ele recebe em tempo real as imagens enviadas pela câmera e as exibe na tela usando o OpenCV. A partir dessa visualização, o usuário pode clicar em qualquer ponto da imagem, e o nó converte automaticamente esse pixel para coordenadas reais do ambiente usando uma transformação previamente calibrada pelo calibration_node; esse ponto convertido é então enviado ao control_node como a nova posição desejada para o robô ir. Além disso, o nó oferece controles deslizantes para ajustar brilho, saturação e hue da imagem. Sempre que os sliders mudam, ele envia esses novos valores para o acquisition_node, que ajusta esses parâmetros da câmera. Assim, o interface_node atua como a ponte entre o usuário e o robô, permitindo escolher destinos apenas com cliques e ajustar a imagem de forma intuitiva.
 
 ### 🔹 control_node
-Implementa o modelo cinemático de um robô diferencial não-holonômico:
-q = [x, y, θ]^T
+O control_node é responsável por calcular os comandos de movimento do rover, baseado nos cálculos matemáticos presentes em \cite{control}, como ilustrado na Fig. X². Ele recebe continuamente a posição atual do robô fornecida pelo localization_node e a posição desejada definida pelo interface_node. Quando um ponto alvo é fornecido, o nó calcula o movimento necessário para que o robô alcance essa posição, determinando tanto o ajuste de orientação quanto o deslocamento para frente.
 
-Calcula:
-- Erro angular  
-- Erro linear  
-- Velocidades linear (v) e angular (ω)  
-- Velocidades individuais das rodas  
+O robô é modelado como um robô móvel diferencial não-holonômico, cuja postura no plano cartesiano pode ser descrita pelo vetor de estado:
 
-Utiliza controladores proporcionais–integrais para correção contínua da trajetória.
+q = [x, y, θ]ᵀ
+
+onde x e y representam a posição do robô no plano e θ representa sua orientação em relação ao referencial global.
+
+
+O modelo cinemático do robô pode ser descrito pelas seguintes equações:
+
+ẋ = v cos(θ)
+ẏ = v sin(θ)
+θ̇ = ω
+
+onde v representa a velocidade linear do robô e ω representa sua velocidade angular.
+
+
+Dada uma posição desejada (x_ref, y_ref), a orientação de referência utilizada para guiar o robô até o alvo é calculada como:
+
+θ_ref = arctan2(y_ref − y, x_ref − x)
+
+O erro angular é então definido como
+
+e_θ = θ_ref − θ
+
+
+A distância entre o robô e o ponto alvo é dada por:
+
+Δl = √((x_ref − x)² + (y_ref − y)²)
+
+Seguindo a estratégia de controle de posicionamento, o erro linear pode ser definido como:
+
+e_s = Δl cos(e_θ)
+
+Esse valor representa a projeção da distância até o alvo na direção atual de movimento do robô.
+
+
+O control_node utiliza controladores proporcional–integral para reduzir tanto o erro linear quanto o erro angular, gerando os comandos de velocidade linear v e velocidade angular ω. Esses comandos são atualizados continuamente durante o ciclo de controle, permitindo que o robô corrija sua trajetória enquanto se aproxima do alvo.
+
+Por fim, as velocidades linear e angular são convertidas nas velocidades individuais das rodas direita e esquerda do robô, de acordo com o modelo cinemático do sistema diferencial:
+
+v_r = (2v + ωL) / (2R)
+
+v_l = (2v − ωL) / (2R)
+
+onde L representa a distância entre as rodas e R é o raio das rodas.
+
+As velocidades calculadas são então enviadas ao transmission_node, que as converte em sinais de controle para os motores do robô. Esse processo ocorre continuamente, com o ciclo de controle sendo executado várias vezes por segundo até que o robô atinja o objetivo dentro de uma tolerância de erro aceitável.
+
 
 ### 🔹 transmission_node
 Realiza comunicação via Bluetooth com o módulo HC-06 e converte velocidades em sinais PWM enviados ao microcontrolador.
