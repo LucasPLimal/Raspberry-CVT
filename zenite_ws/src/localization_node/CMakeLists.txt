@@ -18,7 +18,9 @@ find_package(yaml-cpp REQUIRED)
 
 add_executable(localization_node src/localization_node.cpp)
 ament_target_dependencies(localization_node rclcpp std_msgs sensor_msgs cv_bridge OpenCV zenite_utils yaml-cpp)
+
 target_link_libraries(localization_node ${OpenCV_LIBS})
+
 target_include_directories(localization_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>

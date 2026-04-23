@@ -1,5 +1,3 @@
-#include <rclcpp/rclcpp.hpp>
-#include <opencv2/opencv.hpp>
 #include "acquisition_node/acquisition_node.hpp"
 
 int main(int argc, char** argv) {

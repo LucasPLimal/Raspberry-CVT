@@ -33,6 +33,11 @@ target_link_libraries(calibration_node
   ${OpenCV_LIBS}      # OpenCV
 )
 
+target_include_directories(calibration_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
 # Instalação
 install(TARGETS calibration_node
   DESTINATION lib/${PROJECT_NAME}

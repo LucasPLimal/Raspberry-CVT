@@ -18,6 +18,8 @@ add_executable(interface_node src/interface_node.cpp)
 target_include_directories(interface_node PRIVATE
   ${OpenCV_INCLUDE_DIRS}
   ${cv_bridge_INCLUDE_DIRS}
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
 )
 
 # Linkagem de dependências
